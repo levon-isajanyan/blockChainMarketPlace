@@ -1,0 +1,335 @@
+script.
+
+
+
+
+
+    //Array source which we need to use in navbar and make it changes affect on other elements title
+    let navArraySource = {
+
+        dynamicNavbar: [
+
+            {text: 'Markets'},
+            {text: 'Buy'},
+            {text: 'Contact us'}
+        ]
+
+    };
+
+
+
+
+    //Instance to  invoke navbar items via  array
+    new Vue({
+
+        //Select component unique id
+        el: '#navbar-menu',
+        //Data option inside array
+        data: navArraySource
+
+    });
+
+    //Block component for navbar bottom block
+    Vue.component('row-block', {
+
+        template: '<div class="grid-y"><div class="cell small-12 medium-12 large-12 small-centered"><slot></slot></div></div>'
+
+    });
+
+    //Instance to invoke grid system row & columns  in bottom side of navbar
+    new Vue({
+
+        el: '#pictureblock',
+        data: {
+            imageBlockText : 'Crypto Vue.js'
+        }
+
+    });
+
+
+
+
+
+    //BLock component for market table block
+    Vue.component('row-market', {
+
+        template: '<div class="row"><div class="column small-12 medium-12 large-12"><slot></slot></div></div>'
+
+    });
+
+
+
+    //coinmarketcap API
+    let CoreApi = 'https://api.coinmarketcap.com/v2/ticker/';
+
+
+
+
+    //Pagination component
+    Vue.component('pagination', {
+
+        template: '#pagination-template',
+        props: {
+
+
+
+            current: {
+                type: Number
+            },
+
+            total: {
+                type: Number
+            },
+
+            perpage: {
+                type:Number
+            }
+
+        },
+        computed: {
+
+                totalPages: function () {
+                    return Math.ceil(this.total / this.perpage)
+                },
+                nextPage: function () {
+                    if (this.current + 1 === 11) {
+                        return 10
+                    } else {
+                        return this.current + 1
+                    }
+                },
+                prevPage: function () {
+                    if (this.current - 1 === -1) {
+                        return 0
+                    } else {
+                        return this.current - 1
+                    }
+                }
+
+        },
+        methods: {
+            hasPrev: function(){
+               return this.current > 0,true
+            },
+            hasNext: function () {
+                return this.current < this.totalPages,true
+            },
+            changePage: function(page) {
+                this.$emit('page-changed', page)
+            }
+        }
+
+    });
+
+
+    //Modal component registration for buy modal
+    Vue.component('modal', {
+
+        template: '#modal-template'
+
+    })
+
+
+    //Instance for marketblock title & table loop via coinmarketcap.com API with axios module  support
+    new Vue({
+
+        el: '#marketblock',
+        data: {
+            marketTitle: navArraySource,//Navbar titles array , for manipulating in title area
+            results: [],// Empty array , which json push response data from API request
+            totalCoins: 10,
+            perPage: 10,
+            currentPage: 0,
+            loadingTable: false, //Loading icons
+            serviceUnavailable: false, //Status 503
+            unknownError: false, //Catch error
+            showPagination: true, //Pagination show
+            showTable: true, //Table show after data loaded
+            active: '',//Table row highlight mouseover data
+            showModal: false,//Modal boolean value
+            preferCoinName:'',//Binded name of coin which is in modal , which customer has already selected
+            priceOfSelectedItem: parseInt(''),//Binded price of coin which is in modal
+            coinsNumber:parseInt('')//Binded input numper , which data parsed to Integer
+        },
+        methods: {
+
+            //Buy coins imitation function to call for alerting about coins purchase success
+            buyCoins : function(){
+
+                this.showModal = false,
+                alert(' Congratulations!! You have bought ' + ' ' +  this.coinsNumber  + ' ' + this.preferCoinName)
+
+            },
+
+            //Close buy modal event
+            closeModal: function(){
+
+                this.showModal = false
+
+            },
+
+            //For semi security reasons disable context menu  to prevent user from  right click
+            disableLeftClick: function(event){
+
+                event.preventDefault();
+
+            },
+
+            //Prevent typing special characters and letters in input
+            forbiddenAction: function(e){
+
+                const re = RegExp('[\\d]');
+
+                if (!re.test(e.key)
+
+                    && e.keyCode != 8 /* allow backspace */
+                    && e.key != "." /* allow dots */
+                    && e.keyCode != 127 /* allow delete */
+                    && e.keyCode != 39 /* allow right */
+                    && e.keyCode != 37 /* allow left */
+
+                ){
+
+                    e.preventDefault();
+
+                }
+            },
+
+            //Bind method for modal
+            clickRow(){
+               this.preferCoinName = this.active.name,
+               this.priceOfSelectedItem = this.active.quotes.USD.price,
+               this.coinsNumber = 0
+            },
+
+            fetchCoins: function (page) {
+
+                this.serviceUnavailable = false
+                this.showTable = false
+                this.showPagination= true;
+                this.unknownError = false;
+                this.loadingTable = true;
+
+                let self = this
+
+
+                //Params for request to api
+                var options = {
+                    params: {
+                        'limit': this.perPage, //Limit page row show
+                        'structure': 'array', //Request api to return array
+                        'start': page * this.perPage,
+                    }
+                };
+
+                //Get api result length into pagiantion counter
+                axios.get(CoreApi, {params: {'structure': 'array'}})
+
+                    .then(function (response,select) {
+
+                        if(response.status = 200){
+
+                            self.totalCoins = response.data.data.length
+
+
+                        }else if(response.status = 503){
+
+                            self.serviceUnavailable = true
+
+                        }
+
+                    })
+                    .catch(function (error) {
+
+                          self.unknownError = true
+
+                    });
+
+                //Get result from api for table
+                axios.get(CoreApi, options)
+
+                    .then(function (response) {
+
+                        if(response.status = 200){
+
+                            self.showTable = true,
+                            self.loadingTable = false,
+                            self.results = response.data.data,
+                            self.currentPage = page
+
+                        }else if(response.status = 503){
+
+
+                            self.showPagination= false,
+                            self.serviceUnavailable = true
+
+                        }
+
+
+                    })
+                    .catch(function (error) {
+
+                        self.showPagination= false,
+                        self.showTable = false,
+                        self.unknownError = true,
+                        self.loadingTable = false
+
+                    });
+
+
+            }
+        },
+        //To prevent code clean in html side
+        computed:{
+
+            //Via this function you can change total price of selected coins via math
+            coinPriceResult(){
+                return this.coinsNumber * this.priceOfSelectedItem
+            },
+
+            //Disable buy button, if value is less or equal to zero
+            isDisabled : function () {
+                if(this.coinsNumber <= 0){
+                    return true
+                }
+            }
+        },
+
+        //Lifecyckle hook
+        created: function () {
+
+            this.fetchCoins(this.currentPage)
+
+        }
+
+
+    });
+
+
+    //Block component with row for footer
+    Vue.component('footer-row', {
+
+        template: '<div class="row"><div class="columns  medium-8 large-8"><slot name="footertext"></slot></div><div id="iconblock" class="columns small-12 medium-4 large-4"><slot name="footericon"></slot></div></div>'
+
+    });
+
+    //Footer registred component
+    new Vue({
+
+        el:'#footerblock'
+
+
+    });
+
+    //Zurb  foundation initialize
+    $(document).foundation()
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,11 @@
+.title-bar(data-responsive-toggle='navbar-menu', data-hide-for='medium')
+    button.menu-icon(type='button', data-toggle='navbar-menu')
+
+#navbar-menu.top-bar
+    .top-bar-left
+        img.img-responsive.hide-for-small-only(src='images/blockchain.png')
+    .top-bar-right
+        ul.dropdown.menu(data-dropdown-menu='')
+            li(v-for='navList in dynamicNavbar')
+                a(href="#") {{navList.text}}
+

@@ -1,0 +1,115 @@
+row-block( id="pictureblock")
+    .card
+        img(src='images/blockchain-white.png')
+        .card-section.text-center
+            p
+                |   {{imageBlockText}}
+row-market( id="marketblock" class='text-center')
+    h3(v-for='navList in marketTitle.dynamicNavbar.slice(0,1)')
+        | {{navList.text}}
+    hr
+    table.scroll
+        thead
+            tr
+                td  Crypto name
+                td  Price per coin
+                td  Market cap
+                td  24 hour vol.
+                td  Optional
+        tbody
+            i.fas.fa-spinner.fa-spin.fa-2x.fa-fw(v-show='loadingTable')
+            p(v-show='serviceUnavailable')
+                | Your request was time out
+            p(v-show='unknownError')
+                | Unknown  error please conatct with administrator
+            tr(v-for='result in results'      v-bind:class="{active: active==result}"  v-on:mouseover="active = result"  v-on:mouseout='active = null'  v-show='showTable' )
+                td {{result.name}}
+                td {{result.quotes.USD.price}}
+                td {{result.quotes.USD.market_cap}}$
+                td {{result.quotes.USD.volume_24h}}$
+                td
+                    button.buybutton.hollow.button.success(@click="showModal = true , clickRow()") Buy
+    pagination(v-show='showPagination' :current='currentPage' :total='totalCoins' :perpage='perPage' @page-changed='fetchCoins')
+
+    modal(v-if='showModal')
+        h3(slot='header') Coin buy request
+        table(slot='body')
+            thead
+                tr
+                    td.text-center  Crypto name
+                    td.text-center  Price per coin
+                    td.text-center  Item
+                    td.text-center  Total price
+            tbody
+                tr
+                    td  {{preferCoinName}}
+                    td  {{priceOfSelectedItem}}$
+                    td
+                        input(v-model='coinsNumber' type='number'  class="no-spinners"   @keydown='forbiddenAction' @keydown.ctrl="forbiddenAction" v-on:click.contextmenu.right="disableLeftClick"   )
+                    td  {{coinPriceResult}}$
+        div(slot='footer')
+            button.buybutton.hollow.button.success(:disabled ='isDisabled' @click.prevent='buyCoins')
+                | Buy
+            button#modalcancel.buybutton.hollow.button.success(@click="closeModal")
+                | Cancel
+
+
+template#pagination-template
+            ul.pagination.text-center(role='navigation', aria-label='Pagination')
+                li
+                    a(v-show='hasPrev()' @click ='changePage(prevPage)')
+                        | Previous
+                li
+                    | {{current}} from {{total/perpage}}
+                li
+                    a(v-show='hasNext()'  @click ='changePage(nextPage)')
+                        | Next
+
+script#modal-template(type='text/x-template').
+    <transition name="modal">
+        <div class="modal-mask">
+            <div class="modal-wrapper">
+                <div class="modal-container">
+                    <div class="modal-header">
+                        <slot name="header">
+                          default header
+                        </slot>
+                    </div>
+                    <div class="modal-body">
+                        <slot name="body">
+
+                        </slot>
+                    </div>
+                    <div class="modal-footer">
+                        <slot name="footer">
+                            Def
+                        </slot>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </transition>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
